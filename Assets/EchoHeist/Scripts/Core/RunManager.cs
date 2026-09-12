@@ -14,6 +14,7 @@ namespace EchoHeist
         [SerializeField] private PlayerController playerController;
         [SerializeField] private GadgetController gadgetController;
         [SerializeField] private GuardAI guardAI;
+        [SerializeField] private HeistScore heistScore;
         [SerializeField] private MetaProgression progression;
         [SerializeField] private GadgetSelectionUI gadgetSelectionUI;
         [SerializeField] private PrototypeHUD hud;
@@ -148,6 +149,8 @@ namespace EchoHeist
         {
             if (!_runActive || _isTransitioning) return;
 
+            float remainingSeconds = Mathf.Max(0f, runDuration - ElapsedTime);
+            ScoreBreakdown breakdown = heistScore.CompleteRun(remainingSeconds);
             runRecorder.EndRecording();
             _runActive = false;
             _isTransitioning = true;
@@ -156,15 +159,7 @@ namespace EchoHeist
             hud.ShowStatus("HEIST COMPLETE");
             SuspendGameplayForPostRun();
             progression.MarkFirstHeistCompleted();
-
-            if (progression.SelectedGadget == GadgetType.None)
-            {
-                gadgetSelectionUI.ShowSelection();
-            }
-            else
-            {
-                gadgetSelectionUI.ShowCompletion();
-            }
+            gadgetSelectionUI.ShowResults(breakdown, progression.SelectedGadget == GadgetType.None);
         }
 
         public void ContinueAfterGadgetSelection()

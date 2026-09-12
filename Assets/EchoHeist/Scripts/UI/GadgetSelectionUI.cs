@@ -11,8 +11,18 @@ namespace EchoHeist
         [SerializeField] private GameObject completionContent;
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text contractMessageText;
+        [SerializeField] private TMP_Text dataCoreScoreText;
+        [SerializeField] private TMP_Text intelScoreText;
+        [SerializeField] private TMP_Text undetectedBonusText;
+        [SerializeField] private TMP_Text timeBonusText;
+        [SerializeField] private TMP_Text totalScoreText;
+        [SerializeField] private TMP_Text bestScoreText;
+        [SerializeField] private TMP_Text newBestText;
+        [SerializeField] private TMP_Text resultActionLabel;
         [SerializeField] private MetaProgression progression;
         [SerializeField] private RunManager runManager;
+
+        private bool _requiresGadgetSelection;
 
         public bool IsOpen => panel != null && panel.activeSelf;
 
@@ -26,13 +36,23 @@ namespace EchoHeist
             Time.timeScale = 0f;
         }
 
-        public void ShowCompletion()
+        public void ShowResults(ScoreBreakdown breakdown, bool requiresGadgetSelection)
         {
+            _requiresGadgetSelection = requiresGadgetSelection;
             panel.SetActive(true);
             selectionContent.SetActive(false);
             contractContent.SetActive(false);
             completionContent.SetActive(true);
             titleText.text = "HEIST COMPLETE";
+            dataCoreScoreText.text = $"DATA CORE                 +{breakdown.DataCoreScore}";
+            intelScoreText.text = $"INTEL COLLECTED          +{breakdown.IntelScore}";
+            undetectedBonusText.text = $"UNDETECTED BONUS          +{breakdown.UndetectedBonus}";
+            timeBonusText.text = $"TIME BONUS                +{breakdown.TimeBonus}";
+            totalScoreText.text = $"TOTAL SCORE               {breakdown.TotalScore}";
+            bestScoreText.text = $"BEST SCORE                {breakdown.BestScore}";
+            newBestText.gameObject.SetActive(breakdown.IsNewBest);
+            newBestText.text = "NEW BEST!";
+            resultActionLabel.text = requiresGadgetSelection ? "CONTINUE" : "PLAY AGAIN";
             Time.timeScale = 0f;
         }
 
@@ -48,6 +68,12 @@ namespace EchoHeist
 
         public void PlayAgain()
         {
+            if (_requiresGadgetSelection)
+            {
+                ShowSelection();
+                return;
+            }
+
             ClosePanel();
             runManager.PlayAgainAfterSuccess();
         }

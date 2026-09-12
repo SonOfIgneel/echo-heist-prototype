@@ -7,11 +7,13 @@ namespace EchoHeist
     {
         private const string FirstHeistKey = "EchoHeist.HasCompletedFirstHeist";
         private const string SelectedGadgetKey = "EchoHeist.SelectedGadget";
+        private const string BestScoreKey = "EchoHeist.BestScore";
 
         public event Action<GadgetType> SelectedGadgetChanged;
 
         public bool HasCompletedFirstHeist { get; private set; }
         public GadgetType SelectedGadget { get; private set; }
+        public int BestScore { get; private set; }
 
         private void Awake() => Load();
 
@@ -32,6 +34,16 @@ namespace EchoHeist
             SelectedGadgetChanged?.Invoke(SelectedGadget);
         }
 
+        public bool RecordScore(int score)
+        {
+            if (score <= BestScore) return false;
+
+            BestScore = score;
+            PlayerPrefs.SetInt(BestScoreKey, BestScore);
+            PlayerPrefs.Save();
+            return true;
+        }
+
         public void Load()
         {
             HasCompletedFirstHeist = PlayerPrefs.GetInt(FirstHeistKey, 0) == 1;
@@ -39,6 +51,7 @@ namespace EchoHeist
             SelectedGadget = Enum.IsDefined(typeof(GadgetType), savedGadget)
                 ? (GadgetType)savedGadget
                 : GadgetType.None;
+            BestScore = Mathf.Max(0, PlayerPrefs.GetInt(BestScoreKey, 0));
         }
 
         [ContextMenu("Clear Echo Heist Progression")]
@@ -46,9 +59,11 @@ namespace EchoHeist
         {
             PlayerPrefs.DeleteKey(FirstHeistKey);
             PlayerPrefs.DeleteKey(SelectedGadgetKey);
+            PlayerPrefs.DeleteKey(BestScoreKey);
             PlayerPrefs.Save();
             HasCompletedFirstHeist = false;
             SelectedGadget = GadgetType.None;
+            BestScore = 0;
             SelectedGadgetChanged?.Invoke(SelectedGadget);
         }
     }

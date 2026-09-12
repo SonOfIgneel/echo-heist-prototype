@@ -19,6 +19,7 @@ namespace EchoHeist
         [SerializeField] private Transform[] patrolPoints;
         [SerializeField] private RunManager runManager;
         [SerializeField] private PrototypeHUD hud;
+        [SerializeField] private HeistScore heistScore;
 
         [Header("Movement")]
         [SerializeField, Min(0f)] private float patrolSpeed = 2f;
@@ -221,6 +222,7 @@ namespace EchoHeist
 
         private void AcquireTarget(GuardTarget target)
         {
+            if (target.Kind == GuardTargetKind.Player) heistScore.MarkPlayerDetected();
             _currentTarget = target;
             _pendingTarget = null;
             _detectionTimer = 0f;
