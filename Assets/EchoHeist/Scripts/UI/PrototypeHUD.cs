@@ -1,5 +1,7 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EchoHeist
 {
@@ -16,11 +18,13 @@ namespace EchoHeist
         [SerializeField] private TMP_Text gadgetText;
         [SerializeField] private TMP_Text scoreText;
         [SerializeField] private TMP_Text intelText;
+        [SerializeField] private Image screenPulse;
         [SerializeField] private PlayerObjectiveState objectiveState;
         [SerializeField] private PressurePlate pressurePlate;
         [SerializeField] private HeistScore heistScore;
 
         private int _currentRunNumber;
+        private Coroutine _pulseRoutine;
 
         private void OnEnable()
         {
@@ -45,8 +49,13 @@ namespace EchoHeist
             RefreshObjective();
             RefreshScore();
 
-            if (timelineRecorded) statusText.text = "TIMELINE RECORDED\nECHO ACTIVE";
-            else statusText.text = echoActive ? "ECHO ACTIVE" : string.Empty;
+            if (timelineRecorded) ShowEmphasis("TIMELINE RECORDED\nECHO ACTIVE",
+                new Color(0.15f, 0.95f, 1f, 1f), 0.15f);
+            else
+            {
+                statusText.color = Color.white;
+                statusText.text = echoActive ? "ECHO ACTIVE" : string.Empty;
+            }
         }
 
         public void SetTimer(float remainingSeconds)
@@ -54,7 +63,23 @@ namespace EchoHeist
             timerText.text = $"TIME: {Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds)):00}";
         }
 
-        public void ShowStatus(string message) => statusText.text = message;
+        public void ShowStatus(string message)
+        {
+            statusText.color = Color.white;
+            statusText.text = message;
+        }
+
+        public void ShowDetectionStatus(string message, bool playerDetected)
+        {
+            ShowEmphasis(message, playerDetected
+                ? new Color(1f, 0.12f, 0.08f, 1f)
+                : new Color(1f, 0.62f, 0.12f, 1f), playerDetected ? 0.2f : 0.12f);
+        }
+
+        public void ShowScoreGain(string message)
+        {
+            ShowEmphasis(message, new Color(1f, 0.78f, 0.18f, 1f), 0.1f);
+        }
 
         public void SetGadgetEquipped(GadgetType gadget)
         {
@@ -67,14 +92,15 @@ namespace EchoHeist
         public void SetGadgetState(GadgetType gadget, int cooldownSeconds)
         {
             gadgetText.text = cooldownSeconds > 0
-                ? $"{FormatGadgetName(gadget)} — {cooldownSeconds}s"
-                : $"{FormatGadgetName(gadget)} — READY";
+                ? $"GADGET: {FormatGadgetName(gadget)}\n{cooldownSeconds}s"
+                : $"GADGET: {FormatGadgetName(gadget)}\nREADY";
         }
 
         private void HandleScoreChanged(int score, int intelCollected, int totalIntel)
         {
             scoreText.text = $"SCORE: {score:0000}";
             intelText.text = $"INTEL: {intelCollected}/{totalIntel}";
+            RefreshObjective();
         }
 
         private void RefreshScore()
@@ -86,7 +112,8 @@ namespace EchoHeist
         private void HandleDataCoreStateChanged(bool hasDataCore)
         {
             RefreshObjective();
-            if (hasDataCore) ShowStatus("DATA CORE ACQUIRED");
+            if (hasDataCore) ShowEmphasis("DATA CORE ACQUIRED",
+                new Color(0.2f, 0.9f, 1f, 1f), 0.14f);
         }
 
         private void HandlePlateActivationChanged(bool isActivated)
@@ -98,7 +125,9 @@ namespace EchoHeist
         {
             if (objectiveState != null && objectiveState.HasDataCore)
             {
-                objectiveText.text = "OBJECTIVE: REACH EXTRACTION";
+                objectiveText.text = heistScore != null && heistScore.IntelCollected < heistScore.TotalIntelCount
+                    ? "REACH EXTRACTION  •  OPTIONAL INTEL FOR SCORE"
+                    : "REACH EXTRACTION";
                 return;
             }
 
@@ -110,7 +139,42 @@ namespace EchoHeist
                 return;
             }
 
-            objectiveText.text = "USE YOUR ECHO TO OPEN THE SECURITY DOOR";
+            objectiveText.text = pressurePlate != null && pressurePlate.IsActivated
+                ? "STEAL THE DATA CORE  •  INTEL IS OPTIONAL"
+                : "USE YOUR ECHO TO OPEN THE SECURITY DOOR";
+        }
+
+        private void ShowEmphasis(string message, Color color, float pulseAlpha)
+        {
+            statusText.text = message;
+            statusText.color = color;
+            if (screenPulse == null) return;
+            if (_pulseRoutine != null) StopCoroutine(_pulseRoutine);
+            _pulseRoutine = StartCoroutine(PulseScreen(message, color, pulseAlpha));
+        }
+
+        private IEnumerator PulseScreen(string message, Color color, float peakAlpha)
+        {
+            screenPulse.gameObject.SetActive(true);
+            float duration = 0.28f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float alpha = Mathf.Lerp(peakAlpha, 0f, Mathf.Clamp01(elapsed / duration));
+                screenPulse.color = new Color(color.r, color.g, color.b, alpha);
+                yield return null;
+            }
+
+            screenPulse.color = new Color(color.r, color.g, color.b, 0f);
+            screenPulse.gameObject.SetActive(false);
+            yield return new WaitForSecondsRealtime(1.05f);
+            if (statusText.text == message)
+            {
+                statusText.text = string.Empty;
+                statusText.color = Color.white;
+            }
+            _pulseRoutine = null;
         }
 
         private static string FormatGadgetName(GadgetType gadget)

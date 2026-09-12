@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 namespace EchoHeist
 {
@@ -7,6 +8,8 @@ namespace EchoHeist
     {
         [SerializeField] private Rigidbody body;
         [SerializeField] private Renderer echoRenderer;
+        [SerializeField] private TrailRenderer echoTrail;
+        [SerializeField] private TMP_Text identityText;
 
         private RecordedRun _recording;
         private double _startTime;
@@ -20,6 +23,8 @@ namespace EchoHeist
         {
             if (body == null) body = GetComponent<Rigidbody>();
             if (echoRenderer == null) echoRenderer = GetComponentInChildren<Renderer>();
+            if (echoTrail == null) echoTrail = GetComponentInChildren<TrailRenderer>();
+            if (identityText == null) identityText = GetComponentInChildren<TMP_Text>(true);
             _propertyBlock = new MaterialPropertyBlock();
         }
 
@@ -35,17 +40,36 @@ namespace EchoHeist
             body.position = firstFrame.Position;
             body.rotation = firstFrame.Rotation;
             transform.SetPositionAndRotation(firstFrame.Position, firstFrame.Rotation);
+            if (echoTrail != null)
+            {
+                echoTrail.Clear();
+                echoTrail.emitting = true;
+            }
         }
 
-        public void SetVisualTint(Color color)
+        public void SetVisualTint(Color color, int echoNumber)
         {
-            if (echoRenderer == null) return;
             if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
 
-            echoRenderer.GetPropertyBlock(_propertyBlock);
-            _propertyBlock.SetColor("_BaseColor", color);
-            _propertyBlock.SetColor("_Color", color);
-            echoRenderer.SetPropertyBlock(_propertyBlock);
+            if (echoRenderer != null)
+            {
+                echoRenderer.GetPropertyBlock(_propertyBlock);
+                _propertyBlock.SetColor("_BaseColor", color);
+                _propertyBlock.SetColor("_Color", color);
+                echoRenderer.SetPropertyBlock(_propertyBlock);
+            }
+
+            if (echoTrail != null)
+            {
+                echoTrail.startColor = new Color(color.r, color.g, color.b, Mathf.Min(0.72f, color.a));
+                echoTrail.endColor = new Color(color.r, color.g, color.b, 0f);
+            }
+
+            if (identityText != null)
+            {
+                identityText.text = $"ECHO {echoNumber}";
+                identityText.color = new Color(color.r, color.g, color.b, 1f);
+            }
         }
 
         private void FixedUpdate()
@@ -85,6 +109,8 @@ namespace EchoHeist
         {
             if (body == null) body = GetComponent<Rigidbody>();
             if (echoRenderer == null) echoRenderer = GetComponentInChildren<Renderer>();
+            if (echoTrail == null) echoTrail = GetComponentInChildren<TrailRenderer>();
+            if (identityText == null) identityText = GetComponentInChildren<TMP_Text>(true);
         }
     }
 }

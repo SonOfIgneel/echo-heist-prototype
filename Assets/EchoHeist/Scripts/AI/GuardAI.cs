@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 namespace EchoHeist
 {
@@ -20,6 +21,7 @@ namespace EchoHeist
         [SerializeField] private RunManager runManager;
         [SerializeField] private PrototypeHUD hud;
         [SerializeField] private HeistScore heistScore;
+        [SerializeField] private TMP_Text stateIndicatorText;
 
         [Header("Movement")]
         [SerializeField, Min(0f)] private float patrolSpeed = 2f;
@@ -236,7 +238,7 @@ namespace EchoHeist
                 : target.Kind == GuardTargetKind.Decoy
                     ? "DECOY DETECTED - MOVE!"
                     : "ECHO DETECTED - MOVE!";
-            hud.ShowStatus(alertMessage);
+            hud.ShowDetectionStatus(alertMessage, target.Kind == GuardTargetKind.Player);
         }
 
         private void CatchCurrentTarget()
@@ -295,6 +297,7 @@ namespace EchoHeist
             if (State == nextState) return;
             State = nextState;
             vision.SetIndicatorState(State);
+            RefreshStateIndicator();
         }
 
         private void ResetState()
@@ -313,6 +316,27 @@ namespace EchoHeist
             _patrolIndex = 0;
             State = GuardState.Patrol;
             if (vision != null) vision.SetIndicatorState(State);
+            RefreshStateIndicator();
+        }
+
+        private void RefreshStateIndicator()
+        {
+            if (stateIndicatorText == null) return;
+
+            switch (State)
+            {
+                case GuardState.Suspicious:
+                    stateIndicatorText.text = "?";
+                    stateIndicatorText.color = new Color(1f, 0.68f, 0.12f, 1f);
+                    break;
+                case GuardState.Chase:
+                    stateIndicatorText.text = "!";
+                    stateIndicatorText.color = new Color(1f, 0.12f, 0.08f, 1f);
+                    break;
+                default:
+                    stateIndicatorText.text = string.Empty;
+                    break;
+            }
         }
 
         private void OnValidate()

@@ -50,7 +50,7 @@ namespace EchoHeist
                 EchoPlayback echo = Instantiate(echoPrefab, echoParent);
                 echo.name = $"Echo_Run_{retained.SourceRunNumber}";
                 echo.Initialize(retained.Recording);
-                echo.SetVisualTint(i == 0 ? firstEchoTint : secondEchoTint);
+                echo.SetVisualTint(i == 0 ? firstEchoTint : secondEchoTint, i + 1);
                 _activeEchoes[_activeEchoCount++] = echo;
             }
         }
