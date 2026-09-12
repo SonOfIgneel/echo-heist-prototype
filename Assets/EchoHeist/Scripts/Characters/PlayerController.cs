@@ -11,20 +11,24 @@ namespace EchoHeist
         [SerializeField] private string moveActionName = "Gameplay/Move";
         [SerializeField, Min(0f)] private float moveSpeed = 5f;
         [SerializeField, Min(0f)] private float turnSpeed = 720f;
+        [SerializeField, Min(0f)] private float dashCollisionPadding = 0.08f;
 
         private InputAction _moveAction;
         private Vector3 _spawnPosition;
         private Quaternion _spawnRotation;
-        
+        private Vector3 _lastMovementDirection;
         private PressurePlateActivator _plateActivator;
-private bool _movementEnabled;
+        private bool _movementEnabled;
 
-private void Awake()
+        public Vector3 LastMovementDirection => _lastMovementDirection;
+
+        private void Awake()
         {
             if (body == null) body = GetComponent<Rigidbody>();
             _plateActivator = GetComponent<PressurePlateActivator>();
             _spawnPosition = body.position;
             _spawnRotation = body.rotation;
+            _lastMovementDirection = transform.forward;
             _moveAction = inputActions != null ? inputActions.FindAction(moveActionName, false) : null;
             if (_moveAction == null) Debug.LogError($"Missing input action '{moveActionName}'.", this);
         }
@@ -49,7 +53,8 @@ private void Awake()
 
             if (movement.sqrMagnitude > 0.0001f)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(movement, Vector3.up);
+                _lastMovementDirection = movement.normalized;
+                Quaternion targetRotation = Quaternion.LookRotation(_lastMovementDirection, Vector3.up);
                 body.MoveRotation(Quaternion.RotateTowards(body.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime));
             }
         }
@@ -64,12 +69,31 @@ private void Awake()
             }
         }
 
-public void ResetForRun()
+        public float TryDash(float requestedDistance)
+        {
+            if (!_movementEnabled || requestedDistance <= 0f) return 0f;
+
+            Vector3 direction = _lastMovementDirection.sqrMagnitude > 0.001f
+                ? _lastMovementDirection.normalized
+                : transform.forward;
+
+            float allowedDistance = requestedDistance;
+            if (body.SweepTest(direction, out RaycastHit hit, requestedDistance, QueryTriggerInteraction.Ignore))
+            {
+                allowedDistance = Mathf.Max(0f, hit.distance - dashCollisionPadding);
+            }
+
+            if (allowedDistance <= 0f) return 0f;
+            body.MovePosition(body.position + direction * allowedDistance);
+            return allowedDistance;
+        }
+
+        public void ResetForRun()
         {
             SetMovementEnabled(false);
             _plateActivator?.ReleaseAllPlates();
+            _lastMovementDirection = _spawnRotation * Vector3.forward;
 
-            // Prevent the physics world from observing an intermediate teleport pose.
             body.detectCollisions = false;
             body.position = _spawnPosition;
             body.rotation = _spawnRotation;

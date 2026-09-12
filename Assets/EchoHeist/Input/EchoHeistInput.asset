@@ -27,8 +27,24 @@ MonoBehaviour:
       m_Flags: 0
     - m_Name: CommitTimeline
       m_Type: 1
-      m_ExpectedControlType: Button
-      m_Id: 2bdfeefe-f764-466d-86e1-a93b5549554d
+      m_ExpectedControlType: 
+      m_Id: 20776756-e70d-44cc-b739-8710643cff18
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    - m_Name: ResetRun
+      m_Type: 1
+      m_ExpectedControlType: 
+      m_Id: 18666cc6-9845-44c8-806a-2ffe0ffd5bf2
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    - m_Name: UseGadget
+      m_Type: 1
+      m_ExpectedControlType: 
+      m_Id: 819a59ea-218f-4472-ae71-136650da639a
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -115,12 +131,28 @@ MonoBehaviour:
       m_Action: Move
       m_Flags: 8
     - m_Name: 
-      m_Id: dc141b84-fd9d-4056-bb75-6a04fcaeb2a1
-      m_Path: <Keyboard>/r
+      m_Id: 9efe8781-6818-45d4-9433-7de602161cde
+      m_Path: <Keyboard>/space
       m_Interactions: 
       m_Processors: 
       m_Groups: 
       m_Action: CommitTimeline
+      m_Flags: 0
+    - m_Name: 
+      m_Id: 71bda9de-1579-46a3-911a-6faa9ec57b0d
+      m_Path: <Keyboard>/r
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: ResetRun
+      m_Flags: 0
+    - m_Name: 
+      m_Id: 77ecb5eb-6360-4be4-9b77-e091ca3d08ad
+      m_Path: <Keyboard>/e
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: UseGadget
       m_Flags: 0
   m_ControlSchemes: []
   m_IsProjectWide: 0

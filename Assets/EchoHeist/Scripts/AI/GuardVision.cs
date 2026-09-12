@@ -29,9 +29,10 @@ namespace EchoHeist
         }
 
         public bool TryGetVisibleTarget(GuardTarget preferredTarget, GuardTarget ignoredTargetA,
-            GuardTarget ignoredTargetB, out GuardTarget visibleTarget)
+            GuardTarget ignoredTargetB, GuardTarget ignoredTargetC, out GuardTarget visibleTarget)
         {
-            if (preferredTarget != ignoredTargetA && preferredTarget != ignoredTargetB && CanSee(preferredTarget))
+            if (preferredTarget != ignoredTargetA && preferredTarget != ignoredTargetB &&
+                preferredTarget != ignoredTargetC && CanSee(preferredTarget))
             {
                 visibleTarget = preferredTarget;
                 return true;
@@ -47,7 +48,8 @@ namespace EchoHeist
             {
                 GuardTarget candidate = _overlaps[i].GetComponentInParent<GuardTarget>();
                 if (candidate == null || candidate == ignoredTargetA || candidate == ignoredTargetB ||
-                    !candidate.IsAvailable || ContainsCandidate(candidate, candidateCount)) continue;
+                    candidate == ignoredTargetC || !candidate.IsAvailable ||
+                    ContainsCandidate(candidate, candidateCount)) continue;
                 if (candidateCount < _candidates.Length) _candidates[candidateCount++] = candidate;
                 if (!CanSee(candidate)) continue;
 

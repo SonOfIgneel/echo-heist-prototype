@@ -72,6 +72,12 @@ namespace EchoHeist
             _activeEchoCount = 0;
         }
 
+        public void ClearRetainedRecordings()
+        {
+            ClearPlayback();
+            _retainedEchoes.Clear();
+        }
+
         public EchoPlayback GetActiveEcho(int index)
         {
             return index >= 0 && index < _activeEchoCount ? _activeEchoes[index] : null;

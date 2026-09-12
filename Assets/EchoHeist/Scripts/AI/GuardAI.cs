@@ -41,6 +41,7 @@ namespace EchoHeist
         private GuardTarget _currentTarget;
         private GuardTarget _dismissedEchoA;
         private GuardTarget _dismissedEchoB;
+        private GuardTarget _dismissedEchoC;
         private Vector3 _lastSeenPosition;
         private float _detectionTimer;
         private float _targetLostTimer;
@@ -51,6 +52,7 @@ namespace EchoHeist
 
         public GuardState State { get; private set; }
         public GuardTarget CurrentTarget => _currentTarget;
+        public bool IsGameplayEnabled => enabled && vision != null && vision.enabled;
 
         private void Awake()
         {
@@ -98,6 +100,22 @@ namespace EchoHeist
             body.detectCollisions = true;
         }
 
+        public void SetGameplayEnabled(bool isEnabled)
+        {
+            if (!isEnabled)
+            {
+                ResetState();
+                if (!body.isKinematic)
+                {
+                    body.linearVelocity = Vector3.zero;
+                    body.angularVelocity = Vector3.zero;
+                }
+            }
+
+            if (vision != null) vision.enabled = isEnabled;
+            enabled = isEnabled;
+        }
+
         private void UpdateTargetAwareness()
         {
             if (_currentTarget != null)
@@ -117,7 +135,7 @@ namespace EchoHeist
             }
 
             if (!vision.TryGetVisibleTarget(_pendingTarget, _dismissedEchoA, _dismissedEchoB,
-                    out GuardTarget visibleTarget))
+                    _dismissedEchoC, out GuardTarget visibleTarget))
             {
                 bool wasDetecting = _pendingTarget != null;
                 _pendingTarget = null;
@@ -211,9 +229,12 @@ namespace EchoHeist
             _commitUntil = Time.time + minimumCommitmentDuration;
             TransitionTo(GuardState.Chase);
 
-            hud.ShowStatus(target.Kind == GuardTargetKind.Echo
-                ? "ECHO DETECTED - MOVE!"
-                : "GUARD ALERTED!");
+            string alertMessage = target.Kind == GuardTargetKind.Player
+                ? "GUARD ALERTED!"
+                : target.Kind == GuardTargetKind.Decoy
+                    ? "DECOY DETECTED - MOVE!"
+                    : "ECHO DETECTED - MOVE!";
+            hud.ShowStatus(alertMessage);
         }
 
         private void CatchCurrentTarget()
@@ -231,6 +252,8 @@ namespace EchoHeist
 
             if (_dismissedEchoA == null) _dismissedEchoA = caughtTarget;
             else if (_dismissedEchoB == null && _dismissedEchoA != caughtTarget) _dismissedEchoB = caughtTarget;
+            else if (_dismissedEchoC == null && _dismissedEchoA != caughtTarget &&
+                     _dismissedEchoB != caughtTarget) _dismissedEchoC = caughtTarget;
 
             _lastSeenPosition = caughtTarget.transform.position;
             BeginInvestigation(echoCatchInterestDuration);
@@ -278,6 +301,7 @@ namespace EchoHeist
             _currentTarget = null;
             _dismissedEchoA = null;
             _dismissedEchoB = null;
+            _dismissedEchoC = null;
             _lastSeenPosition = _startPosition;
             _detectionTimer = 0f;
             _targetLostTimer = 0f;

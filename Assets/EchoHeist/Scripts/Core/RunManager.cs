@@ -8,15 +8,21 @@ namespace EchoHeist
     {
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private string commitTimelineActionName = "Gameplay/CommitTimeline";
+        [SerializeField] private string resetRunActionName = "Gameplay/ResetRun";
         [SerializeField] private RunRecorder runRecorder;
         [SerializeField] private EchoManager echoManager;
         [SerializeField] private PlayerController playerController;
+        [SerializeField] private GadgetController gadgetController;
+        [SerializeField] private GuardAI guardAI;
+        [SerializeField] private MetaProgression progression;
+        [SerializeField] private GadgetSelectionUI gadgetSelectionUI;
         [SerializeField] private PrototypeHUD hud;
         [SerializeField] private MonoBehaviour[] resettableBehaviours;
         [SerializeField, Min(1f)] private float runDuration = 60f;
         [SerializeField, Min(0f)] private float failureResetDelay = 0.75f;
 
         private InputAction _commitTimelineAction;
+        private InputAction _resetRunAction;
         private IRunResettable[] _resettables;
         private double _runStartTime;
         private int _currentRunNumber;
@@ -29,7 +35,9 @@ namespace EchoHeist
         private void Awake()
         {
             _commitTimelineAction = inputActions != null ? inputActions.FindAction(commitTimelineActionName, false) : null;
+            _resetRunAction = inputActions != null ? inputActions.FindAction(resetRunActionName, false) : null;
             if (_commitTimelineAction == null) Debug.LogError($"Missing input action '{commitTimelineActionName}'.", this);
+            if (_resetRunAction == null) Debug.LogError($"Missing input action '{resetRunActionName}'.", this);
 
             _resettables = new IRunResettable[resettableBehaviours?.Length ?? 0];
             for (int i = 0; i < _resettables.Length; i++)
@@ -49,9 +57,29 @@ namespace EchoHeist
                 _commitTimelineAction.performed += HandleCommitTimeline;
                 _commitTimelineAction.Enable();
             }
+
+            if (_resetRunAction != null)
+            {
+                _resetRunAction.performed += HandleResetRun;
+                _resetRunAction.Enable();
+            }
         }
 
-        private void Start() => BeginRun(true);
+        private void Start()
+        {
+            if (progression.HasCompletedFirstHeist && progression.SelectedGadget == GadgetType.None)
+            {
+                _currentRunNumber = 1;
+                hud.BeginRun(_currentRunNumber, runDuration, false, false);
+                playerController.SetMovementEnabled(false);
+                gadgetController.SetUsageEnabled(false);
+                SuspendGameplayForPostRun();
+                gadgetSelectionUI.ShowSelection();
+                return;
+            }
+
+            BeginRun(true, false);
+        }
 
         private void OnDisable()
         {
@@ -59,6 +87,12 @@ namespace EchoHeist
             {
                 _commitTimelineAction.performed -= HandleCommitTimeline;
                 _commitTimelineAction.Disable();
+            }
+
+            if (_resetRunAction != null)
+            {
+                _resetRunAction.performed -= HandleResetRun;
+                _resetRunAction.Disable();
             }
         }
 
@@ -72,6 +106,7 @@ namespace EchoHeist
         }
 
         private void HandleCommitTimeline(InputAction.CallbackContext context) => CommitTimeline();
+        private void HandleResetRun(InputAction.CallbackContext context) => ResetCurrentRun();
 
         public void CommitTimeline()
         {
@@ -84,7 +119,16 @@ namespace EchoHeist
                 echoManager.RetainRecording(completedRecording, _currentRunNumber);
             }
 
-            BeginRun(true);
+            BeginRun(true, true);
+        }
+
+        public void ResetCurrentRun()
+        {
+            if (!_runActive || _isTransitioning) return;
+
+            runRecorder.EndRecording();
+            _runActive = false;
+            BeginRun(false, false);
         }
 
         public void FailCurrentRun()
@@ -95,6 +139,7 @@ namespace EchoHeist
             _isTransitioning = true;
             runRecorder.EndRecording();
             playerController.SetMovementEnabled(false);
+            gadgetController.SetUsageEnabled(false);
             hud.ShowStatus("CAUGHT BY GUARD");
             StartCoroutine(RestartAfterFailure());
         }
@@ -105,8 +150,48 @@ namespace EchoHeist
 
             runRecorder.EndRecording();
             _runActive = false;
+            _isTransitioning = true;
             playerController.SetMovementEnabled(false);
+            gadgetController.SetUsageEnabled(false);
             hud.ShowStatus("HEIST COMPLETE");
+            SuspendGameplayForPostRun();
+            progression.MarkFirstHeistCompleted();
+
+            if (progression.SelectedGadget == GadgetType.None)
+            {
+                gadgetSelectionUI.ShowSelection();
+            }
+            else
+            {
+                gadgetSelectionUI.ShowCompletion();
+            }
+        }
+
+        public void ContinueAfterGadgetSelection()
+        {
+            if (progression.SelectedGadget == GadgetType.None) return;
+
+            StartFreshRun();
+        }
+
+        public void PlayAgainAfterSuccess()
+        {
+            if (_runActive) return;
+
+            StartFreshRun();
+        }
+
+        private void StartFreshRun()
+        {
+            echoManager.ClearRetainedRecordings();
+            _currentRunNumber = 0;
+            BeginRun(true, false);
+        }
+
+        private void SuspendGameplayForPostRun()
+        {
+            guardAI.SetGameplayEnabled(false);
+            echoManager.ClearPlayback();
         }
 
         public void NotifyStatus(string message) => hud.ShowStatus(message);
@@ -114,13 +199,15 @@ namespace EchoHeist
         private IEnumerator RestartAfterFailure()
         {
             yield return new WaitForSeconds(failureResetDelay);
-            BeginRun(false);
+            BeginRun(false, false);
         }
 
-        private void BeginRun(bool advanceRunNumber)
+        private void BeginRun(bool advanceRunNumber, bool timelineRecorded)
         {
             _isTransitioning = true;
             playerController.SetMovementEnabled(false);
+            gadgetController.SetUsageEnabled(false);
+            guardAI.SetGameplayEnabled(false);
             echoManager.ClearPlayback();
 
             for (int i = 0; i < _resettables.Length; i++)
@@ -136,8 +223,10 @@ namespace EchoHeist
             runRecorder.BeginRecording(runDuration);
             _runStartTime = Time.timeAsDouble;
             _runActive = true;
-            hud.BeginRun(_currentRunNumber, runDuration, echoManager.ActiveEchoCount > 0);
+            hud.BeginRun(_currentRunNumber, runDuration, echoManager.ActiveEchoCount > 0, timelineRecorded);
             playerController.SetMovementEnabled(true);
+            gadgetController.SetUsageEnabled(true);
+            guardAI.SetGameplayEnabled(true);
             _isTransitioning = false;
         }
     }
