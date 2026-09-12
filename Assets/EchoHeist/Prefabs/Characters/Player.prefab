@@ -16,7 +16,8 @@ GameObject:
   - component: {fileID: 5153120981583321633}
   - component: {fileID: 6030327760370959989}
   - component: {fileID: 4598131848397012615}
-  m_Layer: 0
+  - component: {fileID: 5149027699936741987}
+  m_Layer: 8
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -182,3 +183,16 @@ MonoBehaviour:
   moveActionName: Gameplay/Move
   moveSpeed: 5
   turnSpeed: 720
+--- !u!114 &5149027699936741987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8121133838099368496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc703d0d19ce47c4e91b8168f950e132, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  kind: 0

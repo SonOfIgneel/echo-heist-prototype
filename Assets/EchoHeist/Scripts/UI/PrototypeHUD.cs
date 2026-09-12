@@ -71,7 +71,7 @@ namespace EchoHeist
                 return;
             }
 
-            objectiveText.text = "USE YOUR ECHO TO OPEN THE SECURITY DOOR";
+            objectiveText.text = "USE YOUR ECHO TO DISTRACT THE GUARD";
         }
     }
 }

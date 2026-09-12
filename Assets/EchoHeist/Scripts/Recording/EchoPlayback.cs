@@ -6,11 +6,22 @@ namespace EchoHeist
     public sealed class EchoPlayback : MonoBehaviour
     {
         [SerializeField] private Rigidbody body;
+        [SerializeField] private Renderer echoRenderer;
 
         private RecordedRun _recording;
         private double _startTime;
         private int _frameIndex;
         private bool _isPlaying;
+        private MaterialPropertyBlock _propertyBlock;
+
+        public bool IsPlaying => _isPlaying;
+
+        private void Awake()
+        {
+            if (body == null) body = GetComponent<Rigidbody>();
+            if (echoRenderer == null) echoRenderer = GetComponentInChildren<Renderer>();
+            _propertyBlock = new MaterialPropertyBlock();
+        }
 
         public void Initialize(RecordedRun recording)
         {
@@ -24,6 +35,17 @@ namespace EchoHeist
             body.position = firstFrame.Position;
             body.rotation = firstFrame.Rotation;
             transform.SetPositionAndRotation(firstFrame.Position, firstFrame.Rotation);
+        }
+
+        public void SetVisualTint(Color color)
+        {
+            if (echoRenderer == null) return;
+            if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+
+            echoRenderer.GetPropertyBlock(_propertyBlock);
+            _propertyBlock.SetColor("_BaseColor", color);
+            _propertyBlock.SetColor("_Color", color);
+            echoRenderer.SetPropertyBlock(_propertyBlock);
         }
 
         private void FixedUpdate()
@@ -62,6 +84,7 @@ namespace EchoHeist
         private void OnValidate()
         {
             if (body == null) body = GetComponent<Rigidbody>();
+            if (echoRenderer == null) echoRenderer = GetComponentInChildren<Renderer>();
         }
     }
 }
