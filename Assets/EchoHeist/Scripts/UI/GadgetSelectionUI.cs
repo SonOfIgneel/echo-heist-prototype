@@ -32,7 +32,7 @@ namespace EchoHeist
             selectionContent.SetActive(true);
             contractContent.SetActive(false);
             completionContent.SetActive(false);
-            titleText.text = "CHOOSE YOUR NEXT GADGET";
+            titleText.text = "CHOOSE YOUR SPECIAL ABILITY";
             Time.timeScale = 0f;
         }
 
@@ -110,7 +110,7 @@ namespace EchoHeist
                 case GadgetType.OpticalCloak:
                     return "OPTICAL CLOAK";
                 default:
-                    return "YOUR SELECTED GADGET";
+                    return "YOUR SELECTED SPECIAL ABILITY";
             }
         }
     }

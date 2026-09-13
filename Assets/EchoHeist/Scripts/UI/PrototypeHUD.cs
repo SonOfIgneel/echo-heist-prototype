@@ -8,7 +8,7 @@ namespace EchoHeist
     public sealed class PrototypeHUD : MonoBehaviour
     {
         private const string BaseControls =
-            "WASD / ARROWS — MOVE\nSPACE — COMMIT TIMELINE\nR — RESET RUN";
+            "WASD / ARROWS — MOVE\nSPACE — SAVE ECHO\nR — RESTART RUN";
 
         [SerializeField] private TMP_Text runText;
         [SerializeField] private TMP_Text timerText;
@@ -81,19 +81,23 @@ namespace EchoHeist
             ShowEmphasis(message, new Color(1f, 0.78f, 0.18f, 1f), 0.1f);
         }
 
-        public void SetGadgetEquipped(GadgetType gadget)
+public void SetGadgetEquipped(GadgetType gadget)
         {
             bool equipped = gadget != GadgetType.None;
-            controlsText.text = equipped ? BaseControls + "\nE — USE GADGET" : BaseControls;
+            controlsText.text = equipped
+                ? BaseControls + "\nE — USE " + FormatGadgetName(gadget)
+                : BaseControls;
             gadgetText.gameObject.SetActive(equipped);
             if (equipped) SetGadgetState(gadget, 0);
         }
 
-        public void SetGadgetState(GadgetType gadget, int cooldownSeconds)
+public void SetGadgetState(GadgetType gadget, int cooldownSeconds)
         {
+            gadgetText.textWrappingMode = TextWrappingModes.NoWrap;
+            gadgetText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 600f);
             gadgetText.text = cooldownSeconds > 0
-                ? $"GADGET: {FormatGadgetName(gadget)}\n{cooldownSeconds}s"
-                : $"GADGET: {FormatGadgetName(gadget)}\nREADY";
+                ? $"SPECIAL ABILITY: {FormatGadgetName(gadget)} - {cooldownSeconds}s"
+                : $"SPECIAL ABILITY: {FormatGadgetName(gadget)} - READY";
         }
 
         private void HandleScoreChanged(int score, int intelCollected, int totalIntel)
@@ -121,7 +125,7 @@ namespace EchoHeist
             RefreshObjective();
         }
 
-        private void RefreshObjective()
+private void RefreshObjective()
         {
             if (objectiveState != null && objectiveState.HasDataCore)
             {
@@ -134,7 +138,9 @@ namespace EchoHeist
             if (_currentRunNumber <= 1)
             {
                 objectiveText.text = pressurePlate != null && pressurePlate.IsActivated
-                    ? "PRESS SPACE TO COMMIT THIS TIMELINE"
+                    ? (ControlModeSelector.IsMobileMode
+                        ? "TAP SAVE ECHO TO RECORD THIS RUN"
+                        : "PRESS SPACE TO SAVE THIS RUN AS AN ECHO")
                     : "STEP ON THE PRESSURE PLATE";
                 return;
             }
@@ -177,7 +183,7 @@ namespace EchoHeist
             _pulseRoutine = null;
         }
 
-        private static string FormatGadgetName(GadgetType gadget)
+private static string FormatGadgetName(GadgetType gadget)
         {
             switch (gadget)
             {
@@ -188,7 +194,7 @@ namespace EchoHeist
                 case GadgetType.OpticalCloak:
                     return "OPTICAL CLOAK";
                 default:
-                    return "NO GADGET";
+                    return "NO SPECIAL ABILITY";
             }
         }
     }

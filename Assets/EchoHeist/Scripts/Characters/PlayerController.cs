@@ -41,11 +41,14 @@ namespace EchoHeist
             _movementEnabled = false;
         }
 
-        private void FixedUpdate()
+private void FixedUpdate()
         {
             if (!_movementEnabled || _moveAction == null) return;
 
-            Vector2 input = _moveAction.ReadValue<Vector2>();
+            Vector2 input = ControlModeSelector.IsMobileMode
+                ? MobileJoystick.Value
+                : _moveAction.ReadValue<Vector2>();
+
             if (input.sqrMagnitude > 1f) input.Normalize();
 
             Vector3 movement = new Vector3(input.x, 0f, input.y);
