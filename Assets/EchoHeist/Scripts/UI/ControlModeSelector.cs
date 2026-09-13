@@ -10,7 +10,9 @@ namespace EchoHeist
         public static bool IsMobileMode { get; private set; }
 
         private GameObject _selectionOverlay;
-        private GameObject _mobileControls;
+        
+        private GameObject _rotateDeviceOverlay;
+private GameObject _mobileControls;
         private RunManager _runManager;
         private GadgetController _gadgetController;
         private GadgetSelectionUI _gadgetSelectionUI;
@@ -39,7 +41,9 @@ namespace EchoHeist
 
 
             BuildSelectionOverlay();
-            BuildMobileControls();
+            
+            BuildOrientationOverlay();
+BuildMobileControls();
         }
 
         private void Start()
@@ -52,6 +56,8 @@ namespace EchoHeist
 
 private void Update()
         {
+            RefreshOrientationOverlay();
+            if (_rotateDeviceOverlay != null && _rotateDeviceOverlay.activeSelf) return;
             if (!IsMobileMode || _selectionOverlay.activeSelf) return;
 
             bool gameMenuOpen = _gadgetSelectionUI != null && _gadgetSelectionUI.IsOpen;
@@ -71,7 +77,7 @@ private void Update()
             CloseSelection();
         }
 
-        private void ChooseMobile()
+private void ChooseMobile()
         {
             IsMobileMode = true;
             _controlsHint?.SetActive(false);
@@ -86,6 +92,7 @@ private void Update()
             bool gameMenuOpen = _gadgetSelectionUI != null && _gadgetSelectionUI.IsOpen;
             _mobileControls.SetActive(!gameMenuOpen);
             CloseSelection();
+            RefreshOrientationOverlay();
         }
 
         private void CloseSelection()
@@ -93,6 +100,27 @@ private void Update()
             _selectionOverlay.SetActive(false);
             Time.timeScale = _gadgetSelectionUI != null && _gadgetSelectionUI.IsOpen ? 0f : 1f;
         }
+
+private void RefreshOrientationOverlay()
+        {
+            if (_rotateDeviceOverlay == null) return;
+
+            bool shouldShow = IsMobileMode && Screen.height > Screen.width;
+            if (_rotateDeviceOverlay.activeSelf == shouldShow) return;
+
+            _rotateDeviceOverlay.SetActive(shouldShow);
+            if (shouldShow)
+            {
+                _rotateDeviceOverlay.transform.SetAsLastSibling();
+                Time.timeScale = 0f;
+            }
+            else if (!_selectionOverlay.activeSelf &&
+                     (_gadgetSelectionUI == null || !_gadgetSelectionUI.IsOpen))
+            {
+                Time.timeScale = 1f;
+            }
+        }
+
 
         private void BuildSelectionOverlay()
         {
@@ -110,6 +138,27 @@ private void Update()
             CreateButton("DesktopControls", card.transform, "DESKTOP CONTROLS\nKeyboard", new Vector2(285f, 105f), new Vector2(-160f, -65f), ChooseDesktop, Blue);
             CreateButton("MobileControls", card.transform, "MOBILE CONTROLS\nTouch joystick + buttons", new Vector2(285f, 105f), new Vector2(160f, -65f), ChooseMobile, Cyan);
         }
+
+private void BuildOrientationOverlay()
+        {
+            _rotateDeviceOverlay = CreateRect("RotateDeviceOverlay", transform, Vector2.zero, Vector2.zero);
+            StretchFullScreen(_rotateDeviceOverlay.GetComponent<RectTransform>());
+            _rotateDeviceOverlay.AddComponent<Image>().color = Dark;
+
+            GameObject card = CreateRect("RotateCard", _rotateDeviceOverlay.transform, new Vector2(760f, 280f), Vector2.zero);
+            card.AddComponent<Image>().color = Panel;
+
+            TMP_Text title = CreateText("RotateTitle", card.transform, new Vector2(680f, 100f),
+                new Vector2(0f, 36f), 34f, FontStyles.Bold, Cyan);
+            title.text = "PLEASE ROTATE YOUR PHONE\nTO LANDSCAPE";
+
+            TMP_Text message = CreateText("RotateMessage", card.transform, new Vector2(680f, 48f),
+                new Vector2(0f, -62f), 18f, FontStyles.Normal, Color.white);
+            message.text = "The game will continue automatically.";
+
+            _rotateDeviceOverlay.SetActive(false);
+        }
+
 
 private void BuildMobileControls()
         {
